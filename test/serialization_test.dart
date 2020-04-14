@@ -2,14 +2,12 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:faunadb/faunadb.dart';
 
+// Many of these test scenarios have been adapted from the official C# and JS
+// drivers, to ensure comparable coverage.
+
 void expectJson(Expr actual, String match) => expect(actual.toJson(), match);
 
 void main() {
-  test('TestCreateDatabaseValues', () {
-    var query = CreateDatabase({"name": "test-database"});
-    expectJson(query, "{\"create_database\":{\"object\":{\"name\":\"test-database\"}}}");
-  });
-
   test('TestLiteralValues', () {
     expectJson(Value(10), "10");
     expectJson(Value("a string"), "\"a string\"");
@@ -21,28 +19,28 @@ void main() {
   });
 
   test('TestArrayValues', () {
-    expectJson(wrap([10, 3.14, "a string", true, false, null]), "[10,3.14,\"a string\",true,false,null]");
+    expectJson(Expr.parse([10, 3.14, "a string", true, false, null]), "[10,3.14,\"a string\",true,false,null]");
   });
 
   test('TestObjectValues', () {
-    expectJson(wrap({}), "{\"object\":{}}");
+    expectJson(Expr.parse({}), "{\"object\":{}}");
 
-    expectJson(wrap({"k0": "v0", "k1": "v1"}), "{\"object\":{\"k0\":\"v0\",\"k1\":\"v1\"}}");
+    expectJson(Expr.parse({"k0": "v0", "k1": "v1"}), "{\"object\":{\"k0\":\"v0\",\"k1\":\"v1\"}}");
 
-    expectJson(wrap({"foo": "bar"}), "{\"object\":{\"foo\":\"bar\"}}");
+    expectJson(Expr.parse({"foo": "bar"}), "{\"object\":{\"foo\":\"bar\"}}");
 
-    expectJson(wrap({"long": 10, "double": 2.78}), "{\"object\":{\"long\":10,\"double\":2.78}}");
+    expectJson(Expr.parse({"long": 10, "double": 2.78}), "{\"object\":{\"long\":10,\"double\":2.78}}");
   });
 
   test('TestObjectAndArrays', () {
     expectJson(
-        wrap({
+        Expr.parse({
           "foo": ["bar"]
         }),
         "{\"object\":{\"foo\":[\"bar\"]}}");
 
     expectJson(
-        wrap({
+        Expr.parse({
           "foo": [
             "bar",
             {"foo": "bar"}
@@ -53,7 +51,7 @@ void main() {
 
   test('TestComplexObjects', () {
     expectJson(
-        wrap({
+        Expr.parse({
           "a": {
             "b": {"c": "d"}
           }
@@ -61,249 +59,142 @@ void main() {
         "{\"object\":{\"a\":{\"object\":{\"b\":{\"object\":{\"c\":\"d\"}}}}}}");
   });
 
-// test('TestRef', ()
-// {
+//   test('TestRef', () {
 //     expectJson(Ref(Collection("people"), "id1"), "{\"ref\":{\"collection\":\"people\"},\"id\":\"id1\"}");
-// });
+//   });
 
-// test('TestTimestamp', ()
-// {
-//     expectJson(new TimeV("1970-01-01T00:00:00Z"), "{\"@ts\":\"1970-01-01T00:00:00Z\"}");
+//   test('TestTimestamp', () {
+//     expectJson(Timestamp("1970-01-01T00:00:00Z"), "{\"@ts\":\"1970-01-01T00:00:00Z\"}");
 
-//     expectJson(new TimeV(new DateTime(1970, 1, 1, 0, 0, 0, 0)), "{\"@ts\":\"1970-01-01T00:00:00Z\"}");
-// });
+//     expectJson(Timestamp.fromDateTime(DateTime.utc(1970, 1, 1, 0, 0, 0, 0)), "{\"@ts\":\"1970-01-01T00:00:00.000Z\"}");
+//   });
 
-  test('TestDate', () {
-    expectJson(Date("2000-01-01"), "{\"@date\":\"2000-01-01\"}");
+//   test('TestDate', () {
+//     expectJson(Date("2000-01-01"), "{\"@date\":\"2000-01-01\"}");
 
-    expectJson(Date.fromDateTime(new DateTime(2000, 1, 1)), "{\"@date\":\"2000-01-01\"}");
-  });
+//     expectJson(Date.fromDateTime(DateTime(2000, 1, 1)), "{\"@date\":\"2000-01-01\"}");
+//   });
 
-// test('TestBytes', ()
-// {
-//     expectJson(new BytesV(0x1, 0x2, 0x3, 0x4), "{\"@bytes\":\"AQIDBA==\"}");
-// });
+//   test('TestBytes', () {
+//     expectJson(Bytes([0x1, 0x2, 0x3, 0x4]), "{\"@bytes\":\"AQIDBA==\"}");
 
-// test('TestBytesUrlSafe', ()
-// {
-//     expectJson(new BytesV(0xf8), "{\"@bytes\":\"-A==\"}");
-//     expectJson(new BytesV(0xf9), "{\"@bytes\":\"-Q==\"}");
-//     expectJson(new BytesV(0xfa), "{\"@bytes\":\"-g==\"}");
-//     expectJson(new BytesV(0xfb), "{\"@bytes\":\"-w==\"}");
-//     expectJson(new BytesV(0xfc), "{\"@bytes\":\"_A==\"}");
-//     expectJson(new BytesV(0xfd), "{\"@bytes\":\"_Q==\"}");
-//     expectJson(new BytesV(0xfe), "{\"@bytes\":\"_g==\"}");
-//     expectJson(new BytesV(0xff), "{\"@bytes\":\"_w==\"}");
-// });
+//     expectJson(Bytes([0x0, 0x0, 0x0, 0x0]), "{\"@bytes\":\"AAAAAA==\"}");
+//   });
 
-// test('TestAbort', ()
-// {
-//     expectJson(Abort("message"),
-//         "{\"abort\":\"message\"}");
-// });
+//   test('TestAbort', () {
+//     expectJson(Abort("message"), "{\"abort\":\"message\"}");
+//   });
 
-// test('TestAt', ()
-// {
-//     expectJson(At(1, Paginate(Collections())),
-//         "{\"at\":1,\"expr\":{\"paginate\":{\"collections\":null}}}");
+//   test('TestAt', () {
+//     expectJson(At(1, Paginate(Collections())), "{\"at\":1,\"expr\":{\"paginate\":{\"collections\":null}}}");
 
-//     expectJson(At(Time("1970-01-01T00:00:00Z"), Paginate(Collections())),
-//         "{\"at\":{\"time\":\"1970-01-01T00:00:00Z\"},\"expr\":{\"paginate\":{\"collections\":null}}}");
-// });
+//     expectJson(At(Time("1970-01-01T00:00:00Z"), Paginate(Collections())), "{\"at\":{\"time\":\"1970-01-01T00:00:00Z\"},\"expr\":{\"paginate\":{\"collections\":null}}}");
+//   });
 
-// test('TestLet', ()
-// {
-//     var variables = new Dictionary<string, Expr> {
-//         { "x", 10 });
-//     };
+//   test('TestLet', () {
+//     expectJson(Let({"x": 10}, Var("x")), "{\"let\":[{\"x\":10}],\"in\":{\"var\":\"x\"}}");
 
-//     expectJson(Let(variables, Var("x")),
-//         "{\"let\":{\"x\":10},\"in\":{\"var\":\"x\"}}");
+//     expectJson(Let({"x": 10, "y": 20}, Add([Var("x"), Var("y")])), "{\"let\":[{\"x\":10},{\"y\":20}],\"in\":{\"add\":[{\"var\":\"x\"},{\"var\":\"y\"}]}}");
+//   });
 
-//     ////
-
-//     expectJson(Let("x", 10).In(Var("x")),
-//         "{\"let\":[{\"x\":10}],\"in\":{\"var\":\"x\"}}");
-
-//     ////
-
-//     expectJson(Let("x", 10, "y", 20).In(Add(Var("x"), Var("y"))),
-//         "{\"let\":[{\"x\":10},{\"y\":20}],\"in\":{\"add\":[{\"var\":\"x\"},{\"var\":\"y\"}]}}");
-// });
-
-// test('TestVar', ()
-// {
+//   test('TestVar', () {
 //     expectJson(Var("x"), "{\"var\":\"x\"}");
-// });
+//   });
 
-// test('TestIf', ()
-// {
+//   test('TestIf', () {
 //     expectJson(If(true, 1, 0), "{\"if\":true,\"then\":1,\"else\":0}");
-// });
+//   });
 
-// test('TestDo', ()
-// {
-//     expectJson(Do(If(true, 1, 0), "a string"), "{\"do\":[{\"if\":true,\"then\":1,\"else\":0},\"a string\"]}");
-// });
+//   test('TestDo', () {
+//     expectJson(Do([If(true, 1, 0), "a string"]), "{\"do\":[{\"if\":true,\"then\":1,\"else\":0},\"a string\"]}");
+//   });
 
-// test('TestLamda', ()
-// {
-//     expectJson(Lambda("x", Var("x")),
-//         "{\"lambda\":\"x\",\"expr\":{\"var\":\"x\"}}");
+//   test('TestLamda', () {
+//     expectJson(Lambda("x", Var("x")), "{\"lambda\":\"x\",\"expr\":{\"var\":\"x\"}}");
 
-//     expectJson(Lambda(x => x),
-//         "{\"lambda\":\"x\",\"expr\":{\"var\":\"x\"}}");
+//     expectJson(Lambda(["x", "y"], Add([Var("x"), Var("y")])), "{\"lambda\":[\"x\",\"y\"],\"expr\":{\"add\":[{\"var\":\"x\"},{\"var\":\"y\"}]}}");
+//   });
 
-//     ////
+//   test('TestMap', () {
+//     expectJson(Map_([1, 2, 3], Lambda("x", Var("x"))), "{\"map\":{\"lambda\":\"x\",\"expr\":{\"var\":\"x\"}},\"collection\":[1,2,3]}");
 
-//     expectJson(Lambda(makeArray("x", "y"), Add(Var("x"), Var("y"))),
-//         "{\"lambda\":[\"x\",\"y\"],\"expr\":{\"add\":[{\"var\":\"x\"},{\"var\":\"y\"}]}}");
-
-//     expectJson(Lambda((x, y) => Add(x, y)),
-//         "{\"lambda\":[\"x\",\"y\"],\"expr\":{\"add\":[{\"var\":\"x\"},{\"var\":\"y\"}]}}");
-// });
-
-// test('TestMap', ()
-// {
-//     expectJson(Map(makeArray(1, 2, 3), Lambda("x", Var("x"))),
-//         "{\"map\":{\"lambda\":\"x\",\"expr\":{\"var\":\"x\"}},\"collection\":[1,2,3]}");
-
-//     expectJson(Map(makeArray(1, 2, 3), Lambda(x => x)),
-//         "{\"map\":{\"lambda\":\"x\",\"expr\":{\"var\":\"x\"}},\"collection\":[1,2,3]}");
-
-//     expectJson(Map(makeArray(1, 2, 3), x => x),
-//         "{\"map\":{\"lambda\":\"x\",\"expr\":{\"var\":\"x\"}},\"collection\":[1,2,3]}");
-
-//     expectJson(Map(makeArray(makeArray(1, 2), makeArray(3, 4)), Lambda(makeArray("x", "y"), Add(Var("x"), Var("y")))),
+//     expectJson(
+//         Map_([
+//           [1, 2],
+//           [3, 4]
+//         ], Lambda(["x", "y"], Add([Var("x"), Var("y")]))),
 //         "{\"map\":{\"lambda\":[\"x\",\"y\"],\"expr\":{\"add\":[{\"var\":\"x\"},{\"var\":\"y\"}]}},\"collection\":[[1,2],[3,4]]}");
+//   });
 
-//     expectJson(Map(makeArray(makeArray(1, 2), makeArray(3, 4)), Lambda((x, y) => Add(x, y))),
-//         "{\"map\":{\"lambda\":[\"x\",\"y\"],\"expr\":{\"add\":[{\"var\":\"x\"},{\"var\":\"y\"}]}},\"collection\":[[1,2],[3,4]]}");
+//   test('TestForeach', () {
+//     expectJson(Foreach([1, 2, 3], Lambda("x", Var("x"))), "{\"foreach\":{\"lambda\":\"x\",\"expr\":{\"var\":\"x\"}},\"collection\":[1,2,3]}");
 
-//     expectJson(Map(makeArray(makeArray(1, 2), makeArray(3, 4)), (x, y) => Add(x, y)),
-//         "{\"map\":{\"lambda\":[\"x\",\"y\"],\"expr\":{\"add\":[{\"var\":\"x\"},{\"var\":\"y\"}]}},\"collection\":[[1,2],[3,4]]}");
-// });
-
-// test('TestForeach', ()
-// {
-//     expectJson(Foreach(makeArray(1, 2, 3), Lambda("x", Var("x"))),
-//         "{\"foreach\":{\"lambda\":\"x\",\"expr\":{\"var\":\"x\"}},\"collection\":[1,2,3]}");
-
-//     expectJson(Foreach(makeArray(1, 2, 3), Lambda(x => x)),
-//         "{\"foreach\":{\"lambda\":\"x\",\"expr\":{\"var\":\"x\"}},\"collection\":[1,2,3]}");
-
-//     expectJson(Foreach(makeArray(1, 2, 3), x => x),
-//         "{\"foreach\":{\"lambda\":\"x\",\"expr\":{\"var\":\"x\"}},\"collection\":[1,2,3]}");
-
-//     expectJson(Foreach(makeArray(makeArray(1, 2), makeArray(3, 4)), Lambda(makeArray("x", "y"), Add(Var("x"), Var("y")))),
+//     expectJson(
+//         Foreach([
+//           [1, 2],
+//           [3, 4]
+//         ], Lambda(["x", "y"], Add([Var("x"), Var("y")]))),
 //         "{\"foreach\":{\"lambda\":[\"x\",\"y\"],\"expr\":{\"add\":[{\"var\":\"x\"},{\"var\":\"y\"}]}},\"collection\":[[1,2],[3,4]]}");
+//   });
 
-//     expectJson(Foreach(makeArray(makeArray(1, 2), makeArray(3, 4)), Lambda((x, y) => Add(x, y))),
-//         "{\"foreach\":{\"lambda\":[\"x\",\"y\"],\"expr\":{\"add\":[{\"var\":\"x\"},{\"var\":\"y\"}]}},\"collection\":[[1,2],[3,4]]}");
+//   test('TestFilter', () {
+//     expectJson(Filter([1, 2, 3], Lambda("x", Var("x"))), "{\"filter\":{\"lambda\":\"x\",\"expr\":{\"var\":\"x\"}},\"collection\":[1,2,3]}");
 
-//     expectJson(Foreach(makeArray(makeArray(1, 2), makeArray(3, 4)), (x, y) => Add(x, y)),
-//         "{\"foreach\":{\"lambda\":[\"x\",\"y\"],\"expr\":{\"add\":[{\"var\":\"x\"},{\"var\":\"y\"}]}},\"collection\":[[1,2],[3,4]]}");
-// });
-
-// test('TestFilter', ()
-// {
-//     expectJson(Filter(makeArray(1, 2, 3), Lambda("x", Var("x"))),
-//         "{\"filter\":{\"lambda\":\"x\",\"expr\":{\"var\":\"x\"}},\"collection\":[1,2,3]}");
-
-//     expectJson(Filter(makeArray(1, 2, 3), Lambda(x => x)),
-//         "{\"filter\":{\"lambda\":\"x\",\"expr\":{\"var\":\"x\"}},\"collection\":[1,2,3]}");
-
-//     expectJson(Filter(makeArray(1, 2, 3), x => x),
-//         "{\"filter\":{\"lambda\":\"x\",\"expr\":{\"var\":\"x\"}},\"collection\":[1,2,3]}");
-
-//     expectJson(Filter(makeArray(makeArray(1, 2), makeArray(3, 4)), Lambda(makeArray("x", "y"), Add(Var("x"), Var("y")))),
+//     expectJson(
+//         Filter([
+//           [1, 2],
+//           [3, 4]
+//         ], Lambda(["x", "y"], Add([Var("x"), Var("y")]))),
 //         "{\"filter\":{\"lambda\":[\"x\",\"y\"],\"expr\":{\"add\":[{\"var\":\"x\"},{\"var\":\"y\"}]}},\"collection\":[[1,2],[3,4]]}");
+//   });
 
-//     expectJson(Filter(makeArray(makeArray(1, 2), makeArray(3, 4)), Lambda((x, y) => Add(x, y))),
-//         "{\"filter\":{\"lambda\":[\"x\",\"y\"],\"expr\":{\"add\":[{\"var\":\"x\"},{\"var\":\"y\"}]}},\"collection\":[[1,2],[3,4]]}");
+//   test('TestTake', () {
+//     expectJson(Take(2, [1, 2, 3]), "{\"take\":2,\"collection\":[1,2,3]}");
+//   });
 
-//     expectJson(Filter(makeArray(makeArray(1, 2), makeArray(3, 4)), (x, y) => Add(x, y)),
-//         "{\"filter\":{\"lambda\":[\"x\",\"y\"],\"expr\":{\"add\":[{\"var\":\"x\"},{\"var\":\"y\"}]}},\"collection\":[[1,2],[3,4]]}");
-// });
+//   test('TestDrop', () {
+//     expectJson(Drop(1, [1, 2, 3]), "{\"drop\":1,\"collection\":[1,2,3]}");
+//   });
 
-// test('TestTake', ()
-// {
-//     expectJson(Take(2, makeArray(1, 2, 3)),
-//         "{\"take\":2,\"collection\":[1,2,3]}");
-// });
+//   test('TestPrepend', () {
+//     expectJson(Prepend([1, 2, 3], [4, 5, 6]), "{\"prepend\":[1,2,3],\"collection\":[4,5,6]}");
+//   });
 
-// test('TestDrop', ()
-// {
-//     expectJson(Drop(1, makeArray(1, 2, 3)),
-//         "{\"drop\":1,\"collection\":[1,2,3]}");
-// });
+//   test('TestAppend', () {
+//     expectJson(Append([1, 2, 3], [4, 5, 6]), "{\"append\":[1,2,3],\"collection\":[4,5,6]}");
+//   });
 
-// test('TestPrepend', ()
-// {
-//     expectJson(Prepend(makeArray(1, 2, 3), makeArray(4, 5, 6)),
-//         "{\"prepend\":[1,2,3],\"collection\":[4,5,6]}");
-// });
+//   test('TestIsEmpty', () {
+//     expectJson(IsEmpty([1, 2, 3]), "{\"is_empty\":[1,2,3]}");
+//   });
 
-// test('TestAppend', ()
-// {
-//     expectJson(Append(makeArray(1, 2, 3), makeArray(4, 5, 6)),
-//         "{\"append\":[1,2,3],\"collection\":[4,5,6]}");
-// });
+//   test('TestIsNonEmpty', () {
+//     expectJson(IsNonEmpty([1, 2, 3]), "{\"is_nonempty\":[1,2,3]}");
+//   });
 
-// test('TestIsEmpty', ()
-// {
-//     expectJson(IsEmpty(makeArray(1, 2, 3)),
-//         "{\"is_empty\":[1,2,3]}");
-// });
+//   test('TestGet', () {
+//     expectJson(Get(Ref(Collection("thing"), "123456789")), "{\"get\":{\"ref\":{\"collection\":\"thing\"},\"id\":\"123456789\"}}");
+//   });
 
-// test('TestIsNonEmpty', ()
-// {
-//     expectJson(IsNonEmpty(makeArray(1, 2, 3)),
-//         "{\"is_nonempty\":[1,2,3]}");
-// });
+//   test('TestKeyFromSecret', () {
+//     expectJson(KeyFromSecret("s3cr3t"), "{\"key_from_secret\":\"s3cr3t\"}");
+//   });
 
-// test('TestGet', ()
-// {
-//     expectJson(Get(Ref(Collection("thing"), "123456789")),
-//         "{\"get\":{\"ref\":{\"collection\":\"thing\"},\"id\":\"123456789\"}}");
-// });
+//   test('TestPaginate', () {
+//     expectJson(Paginate(Databases()), "{\"paginate\":{\"databases\":null}}");
 
-// test('TestKeyFromSecret', ()
-// {
-//     expectJson(KeyFromSecret("s3cr3t"),
-//         "{\"key_from_secret\":\"s3cr3t\"}");
-// });
+//     expectJson(Paginate(Databases(), after: Ref(Collection("thing"), "123456789")), "{\"paginate\":{\"databases\":null},\"after\":{\"ref\":{\"collection\":\"thing\"},\"id\":\"123456789\"}}");
 
-// test('TestPaginate', ()
-// {
-//     expectJson(
-//         Paginate(Databases()),
-//         "{\"paginate\":{\"databases\":null}}");
+//     expectJson(Paginate(Databases(), before: Ref(Collection("thing"), "123456789")), "{\"paginate\":{\"databases\":null},\"before\":{\"ref\":{\"collection\":\"thing\"},\"id\":\"123456789\"}}");
 
-//     expectJson(
-//         Paginate(Databases(), after: Ref(Collection("thing"), "123456789")),
-//         "{\"paginate\":{\"databases\":null},\"after\":{\"ref\":{\"collection\":\"thing\"},\"id\":\"123456789\"}}");
+//     expectJson(Paginate(Databases(), ts: Time("1970-01-01T00:00:00Z")), "{\"paginate\":{\"databases\":null},\"ts\":{\"time\":\"1970-01-01T00:00:00Z\"}}");
 
-//     expectJson(
-//         Paginate(Databases(), before: Ref(Collection("thing"), "123456789")),
-//         "{\"paginate\":{\"databases\":null},\"before\":{\"ref\":{\"collection\":\"thing\"},\"id\":\"123456789\"}}");
+//     expectJson(Paginate(Databases(), size: 10), "{\"paginate\":{\"databases\":null},\"size\":10}");
 
-//     expectJson(
-//         Paginate(Databases(), ts: Time("1970-01-01T00:00:00Z")),
-//         "{\"paginate\":{\"databases\":null},\"ts\":{\"time\":\"1970-01-01T00:00:00Z\"}}");
+//     expectJson(Paginate(Databases(), events: true), "{\"paginate\":{\"databases\":null},\"events\":true}");
 
-//     expectJson(
-//         Paginate(Databases(), size: 10),
-//         "{\"paginate\":{\"databases\":null},\"size\":10}");
-
-//     expectJson(
-//         Paginate(Databases(), events: true),
-//         "{\"paginate\":{\"databases\":null},\"events\":true}");
-
-//     expectJson(
-//         Paginate(Databases(), sources: true),
-//         "{\"paginate\":{\"databases\":null},\"sources\":true}");
-// });
+//     expectJson(Paginate(Databases(), sources: true), "{\"paginate\":{\"databases\":null},\"sources\":true}");
+//   });
 
 // test('TestExists', ()
 // {
@@ -317,21 +208,21 @@ void main() {
 // test('TestCreate', ()
 // {
 //     expectJson(
-//         Create(Collection("widgets"), wrap("data", "some-data")),
+//         Create(Collection("widgets"), Expr.parse("data", "some-data")),
 //         "{\"create\":{\"collection\":\"widgets\"},\"params\":{\"object\":{\"data\":\"some-data\"}}}");
 // });
 
 // test('TestUpdate', ()
 // {
 //     expectJson(
-//         Update(Ref(Collection("widgets"), "123456789"), wrap("name", "things")),
+//         Update(Ref(Collection("widgets"), "123456789"), Expr.parse("name", "things")),
 //         "{\"update\":{\"ref\":{\"collection\":\"widgets\"},\"id\":\"123456789\"},\"params\":{\"object\":{\"name\":\"things\"}}}");
 // });
 
 // test('TestReplace', ()
 // {
 //     expectJson(
-//         Replace(Ref(Collection("widgets"), "123456789"), wrap("data", wrap("name", "Computer"))),
+//         Replace(Ref(Collection("widgets"), "123456789"), Expr.parse("data", Expr.parse("name", "Computer"))),
 //         "{\"replace\":{\"ref\":{\"collection\":\"widgets\"},\"id\":\"123456789\"},\"params\":{\"object\":{\"data\":{\"object\":{\"name\":\"Computer\"}}}}}");
 // });
 
@@ -349,7 +240,7 @@ void main() {
 //             Ref(Collection("widgets"), "123456789"),
 //             Time("1970-01-01T00:00:00.123Z"),
 //             "create",
-//             wrap("data", wrap("name", "Computer"))),
+//             Expr.parse("data", Expr.parse("name", "Computer"))),
 //         "{\"insert\":{\"ref\":{\"collection\":\"widgets\"},\"id\":\"123456789\"}," +
 //         "\"ts\":{\"time\":\"1970-01-01T00:00:00.123Z\"}," +
 //         "\"action\":\"create\"," +
@@ -360,7 +251,7 @@ void main() {
 //             Ref(Collection("widgets"), "123456789"),
 //             Time("1970-01-01T00:00:00.123Z"),
 //             ActionType.Create,
-//             wrap("data", wrap("name", "Computer"))),
+//             Expr.parse("data", Expr.parse("name", "Computer"))),
 //         "{\"insert\":{\"ref\":{\"collection\":\"widgets\"},\"id\":\"123456789\"},"+
 //         "\"ts\":{\"time\":\"1970-01-01T00:00:00.123Z\"},"+
 //         "\"action\":\"create\","+
@@ -390,49 +281,47 @@ void main() {
 
 // test('TestCreateClass', ()
 // {
-//     expectJson(CreateCollection(wrap("name", "class_name")),
+//     expectJson(CreateCollection(Expr.parse("name", "class_name")),
 //         "{\"create_collection\":{\"object\":{\"name\":\"class_name\"}}}");
 // });
 
-// test('TestCreateDatabase', ()
-// {
-//     expectJson(CreateDatabase(wrap("name", "db_name")),
-//         "{\"create_database\":{\"object\":{\"name\":\"db_name\"}}}");
-// });
+  test('TestCreateDatabase', () {
+    expectJson(CreateDatabase({"name": "db_name"}), "{\"create_database\":{\"object\":{\"name\":\"db_name\"}}}");
+  });
 
 // test('TestCreateIndex', ()
 // {
 //     expectJson(
-//         CreateIndex(wrap("name", "index_name", "source", Collection("class_name"))),
+//         CreateIndex(Expr.parse("name", "index_name", "source", Collection("class_name"))),
 //         "{\"create_index\":{\"object\":{\"name\":\"index_name\",\"source\":{\"collection\":\"class_name\"}}}}");
 // });
 
 // test('TestCreateKey', ()
 // {
 //     expectJson(
-//         CreateKey(wrap("database", Database("db_name"), "role", "client")),
+//         CreateKey(Expr.parse("database", Database("db_name"), "role", "client")),
 //         "{\"create_key\":{\"object\":{\"database\":{\"database\":\"db_name\"},\"role\":\"client\"}}}");
 // });
 
 // test('TestCreateRole', ()
 // {
 //     expectJson(
-//         CreateRole(wrap(
+//         CreateRole(Expr.parse(
 //             "name", "role_name",
-//             "privileges", makeArray(wrap(
+//             "privileges", makeArray(Expr.parse(
 //                 "resource", Databases(),
-//                 "actions", wrap("read", true)
+//                 "actions", Expr.parse("read", true)
 //             ))
 //         )),
 //         "{\"create_role\":{\"object\":{\"name\":\"role_name\",\"privileges\":[{\"object\":{" +
 //         "\"resource\":{\"databases\":null},\"actions\":{\"object\":{\"read\":true}}}}]}}}");
 
 //     expectJson(
-//         CreateRole(wrap(
+//         CreateRole(Expr.parse(
 //             "name", "role_name",
-//             "privileges", wrap(
+//             "privileges", Expr.parse(
 //                 "resource", Databases(),
-//                 "actions", wrap("read", true)
+//                 "actions", Expr.parse("read", true)
 //             )
 //         )),
 //         "{\"create_role\":{\"object\":{\"name\":\"role_name\",\"privileges\":{\"object\":{" +
@@ -520,7 +409,7 @@ void main() {
 
 // test('TestLogin', ()
 // {
-//     expectJson(Login(Ref(Collection("widgets"), "123456789"), wrap("password", "P455w0rd")),
+//     expectJson(Login(Ref(Collection("widgets"), "123456789"), Expr.parse("password", "P455w0rd")),
 //           "{\"login\":{\"ref\":{\"collection\":\"widgets\"},\"id\":\"123456789\"},\"params\":{\"object\":{\"password\":\"P455w0rd\"}}}");
 // });
 
@@ -587,14 +476,11 @@ void main() {
 //         "{\"ngram\":\"str\",\"min\":1,\"max\":2}");
 // });
 
-// test('TestTime', ()
-// {
-//     expectJson(Time("1970-01-01T00:00:00+00:00"),
-//         "{\"time\":\"1970-01-01T00:00:00+00:00\"}");
+//   test('TestTime', () {
+//     expectJson(Time("1970-01-01T00:00:00+00:00"), "{\"time\":\"1970-01-01T00:00:00+00:00\"}");
 
-//     expectJson(Time("now"),
-//         "{\"time\":\"now\"}");
-// });
+//     expectJson(Time("now"), "{\"time\":\"now\"}");
+//   });
 
 // test('TestEpoch', ()
 // {
@@ -635,38 +521,32 @@ void main() {
 //         "{\"new_id\":null}");
 // });
 
-// test('TestDatabase', ()
-// {
+//   test('TestDatabase', () {
 //     expectJson(Database("db_name"), "{\"database\":\"db_name\"}");
 //     expectJson(Database("db_name", Database("scope")), "{\"database\":\"db_name\",\"scope\":{\"database\":\"scope\"}}");
-// });
+//   });
 
-// test('TestIndex', ()
-// {
+//   test('TestIndex', () {
 //     expectJson(Index("index_name"), "{\"index\":\"index_name\"}");
 //     expectJson(Index("index_name", Database("scope")), "{\"index\":\"index_name\",\"scope\":{\"database\":\"scope\"}}");
-// });
+//   });
 
-// test('TestClass', ()
-// {
+//   test('TestClass', () {
 //     expectJson(Collection("class_name"), "{\"collection\":\"class_name\"}");
 //     expectJson(Collection("class_name", Database("scope")), "{\"collection\":\"class_name\",\"scope\":{\"database\":\"scope\"}}");
-// });
+//   });
 
-// test('TestFunction', ()
-// {
+//   test('TestFunction', () {
 //     expectJson(Function("function_name"), "{\"function\":\"function_name\"}");
 //     expectJson(Function("function_name", Database("scope")), "{\"function\":\"function_name\",\"scope\":{\"database\":\"scope\"}}");
-// });
+//   });
 
-// test('TestRole', ()
-// {
+//   test('TestRole', () {
 //     expectJson(Role("role_name"), "{\"role\":\"role_name\"}");
 //     expectJson(Role("role_name", Database("scope")), "{\"role\":\"role_name\",\"scope\":{\"database\":\"scope\"}}");
-// });
+//   });
 
-// test('TestNativeRefs', ()
-// {
+//   test('TestNativeRefs', () {
 //     expectJson(Collections(), "{\"collections\":null}");
 //     expectJson(Databases(), "{\"databases\":null}");
 //     expectJson(Indexes(), "{\"indexes\":null}");
@@ -684,7 +564,7 @@ void main() {
 //     expectJson(Tokens(Database("scope")), "{\"tokens\":{\"database\":\"scope\"}}");
 //     expectJson(Credentials(Database("scope")), "{\"credentials\":{\"database\":\"scope\"}}");
 //     expectJson(Roles(Database("scope")), "{\"roles\":{\"database\":\"scope\"}}");
-// });
+//   });
 
 // test('TestEquals', ()
 // {
@@ -697,17 +577,17 @@ void main() {
 
 // test('TestContains', ()
 // {
-//     expectJson(Contains(makeArray("favorites", "foods"), wrap("favorites", wrap("foods", makeArray("crunchings", "munchings", "lunchings")))),
+//     expectJson(Contains(makeArray("favorites", "foods"), Expr.parse("favorites", Expr.parse("foods", makeArray("crunchings", "munchings", "lunchings")))),
 //         "{\"contains\":[\"favorites\",\"foods\"],\"in\":{\"object\":{\"favorites\":{\"object\":{\"foods\":[\"crunchings\",\"munchings\",\"lunchings\"]}}}}}");
 // });
 
 // test('TestSelect', ()
 // {
-//     expectJson(Select(makeArray("favorites", "foods", 1), wrap("favorites", wrap("foods", makeArray("crunchings", "munchings", "lunchings")))),
+//     expectJson(Select(makeArray("favorites", "foods", 1), Expr.parse("favorites", Expr.parse("foods", makeArray("crunchings", "munchings", "lunchings")))),
 //         "{\"select\":[\"favorites\",\"foods\",1]," +
 //         "\"from\":{\"object\":{\"favorites\":{\"object\":{\"foods\":[\"crunchings\",\"munchings\",\"lunchings\"]}}}}}");
 
-//     expectJson(Select(makeArray("favorites", "foods", 1), wrap("favorites", wrap("foods", makeArray("crunchings", "munchings", "lunchings"))), "defaultValue"),
+//     expectJson(Select(makeArray("favorites", "foods", 1), Expr.parse("favorites", Expr.parse("foods", makeArray("crunchings", "munchings", "lunchings"))), "defaultValue"),
 //         "{\"select\":[\"favorites\",\"foods\",1]," +
 //         "\"from\":{\"object\":{\"favorites\":{\"object\":{\"foods\":[\"crunchings\",\"munchings\",\"lunchings\"]}}}}," +
 //         "\"default\":\"defaultValue\"}");
@@ -715,7 +595,7 @@ void main() {
 
 // test('TestSelectAll', ()
 // {
-//     expectJson(SelectAll("foo", wrap("foo", "bar")),
+//     expectJson(SelectAll("foo", Expr.parse("foo", "bar")),
 //         "{\"select_all\":\"foo\",\"from\":{\"object\":{\"foo\":\"bar\"}}}");
 // });
 
@@ -816,19 +696,19 @@ void main() {
 // public void TestInstanceRef()
 // {
 //     expectJson(
-//         new RefV(
+//         RefV(
 //             id: "123456789",
-//             collection: new RefV(id: "child-class", collection: Native.COLLECTIONS)),
+//             collection: RefV(id: "child-class", collection: Native.COLLECTIONS)),
 //         "{\"@ref\":{\"id\":\"123456789\",\"collection\":{\"@ref\":{\"id\":\"child-class\",\"collection\":{\"@ref\":{\"id\":\"collections\"}}}}}}"
 //     );
 
 //     expectJson(
-//         new RefV(
+//         RefV(
 //             id: "123456789",
-//             collection: new RefV(
+//             collection: RefV(
 //                 id: "child-class",
 //                 collection: Native.COLLECTIONS,
-//                 database: new RefV(id: "child-database", collection: Native.DATABASES))),
+//                 database: RefV(id: "child-database", collection: Native.DATABASES))),
 //         "{\"@ref\":{\"id\":\"123456789\",\"collection\":{\"@ref\":{\"id\":\"child-class\",\"collection\":{\"@ref\":{\"id\":\"collections\"}},\"database\":{\"@ref\":{\"id\":\"child-database\",\"collection\":{\"@ref\":{\"id\":\"databases\"}}}}}}}}"
 //     );
 // });
@@ -837,12 +717,12 @@ void main() {
 // public void TestClassRef()
 // {
 //     expectJson(
-//         new RefV(id: "a-class", collection: Native.COLLECTIONS),
+//         RefV(id: "a-class", collection: Native.COLLECTIONS),
 //         "{\"@ref\":{\"id\":\"a-class\",\"collection\":{\"@ref\":{\"id\":\"collections\"}}}}"
 //     );
 
 //     expectJson(
-//         new RefV(id: "a-class", collection: Native.COLLECTIONS, database: new RefV(id: "a-database", collection: Native.DATABASES)),
+//         RefV(id: "a-class", collection: Native.COLLECTIONS, database: RefV(id: "a-database", collection: Native.DATABASES)),
 //         "{\"@ref\":{\"id\":\"a-class\",\"collection\":{\"@ref\":{\"id\":\"collections\"}},\"database\":{\"@ref\":{\"id\":\"a-database\",\"collection\":{\"@ref\":{\"id\":\"databases\"}}}}}}"
 //     );
 // });
@@ -851,12 +731,12 @@ void main() {
 // public void TestDatabaseRef()
 // {
 //     expectJson(
-//         new RefV(id: "a-database", collection: Native.DATABASES),
+//         RefV(id: "a-database", collection: Native.DATABASES),
 //         "{\"@ref\":{\"id\":\"a-database\",\"collection\":{\"@ref\":{\"id\":\"databases\"}}}}"
 //     );
 
 //     expectJson(
-//         new RefV(id: "child-database", collection: Native.DATABASES, database: new RefV(id: "parent-database", collection: Native.DATABASES)),
+//         RefV(id: "child-database", collection: Native.DATABASES, database: RefV(id: "parent-database", collection: Native.DATABASES)),
 //         "{\"@ref\":{\"id\":\"child-database\",\"collection\":{\"@ref\":{\"id\":\"databases\"}},\"database\":{\"@ref\":{\"id\":\"parent-database\",\"collection\":{\"@ref\":{\"id\":\"databases\"}}}}}}"
 //     );
 // });
@@ -865,12 +745,12 @@ void main() {
 // public void TestIndexRef()
 // {
 //     expectJson(
-//         new RefV(id: "a-index", collection: Native.INDEXES),
+//         RefV(id: "a-index", collection: Native.INDEXES),
 //         "{\"@ref\":{\"id\":\"a-index\",\"collection\":{\"@ref\":{\"id\":\"indexes\"}}}}"
 //     );
 
 //     expectJson(
-//         new RefV(id: "a-index", collection: Native.INDEXES, database: new RefV(id: "a-database", collection: Native.DATABASES)),
+//         RefV(id: "a-index", collection: Native.INDEXES, database: RefV(id: "a-database", collection: Native.DATABASES)),
 //         "{\"@ref\":{\"id\":\"a-index\",\"collection\":{\"@ref\":{\"id\":\"indexes\"}},\"database\":{\"@ref\":{\"id\":\"a-database\",\"collection\":{\"@ref\":{\"id\":\"databases\"}}}}}}"
 //     );
 // });
@@ -879,12 +759,12 @@ void main() {
 // public void TestKeyRef()
 // {
 //     expectJson(
-//         new RefV(id: "a-key", collection: Native.KEYS),
+//         RefV(id: "a-key", collection: Native.KEYS),
 //         "{\"@ref\":{\"id\":\"a-key\",\"collection\":{\"@ref\":{\"id\":\"keys\"}}}}"
 //     );
 
 //     expectJson(
-//         new RefV(id: "a-key", collection: Native.KEYS, database: new RefV(id: "a-database", collection: Native.DATABASES)),
+//         RefV(id: "a-key", collection: Native.KEYS, database: RefV(id: "a-database", collection: Native.DATABASES)),
 //         "{\"@ref\":{\"id\":\"a-key\",\"collection\":{\"@ref\":{\"id\":\"keys\"}},\"database\":{\"@ref\":{\"id\":\"a-database\",\"collection\":{\"@ref\":{\"id\":\"databases\"}}}}}}"
 //     );
 // });
@@ -893,12 +773,12 @@ void main() {
 // public void TestFunctionRef()
 // {
 //     expectJson(
-//         new RefV(id: "a-function", collection: Native.FUNCTIONS),
+//         RefV(id: "a-function", collection: Native.FUNCTIONS),
 //         "{\"@ref\":{\"id\":\"a-function\",\"collection\":{\"@ref\":{\"id\":\"functions\"}}}}"
 //     );
 
 //     expectJson(
-//         new RefV(id: "a-function", collection: Native.FUNCTIONS, database: new RefV(id: "a-database", collection: Native.DATABASES)),
+//         RefV(id: "a-function", collection: Native.FUNCTIONS, database: RefV(id: "a-database", collection: Native.DATABASES)),
 //         "{\"@ref\":{\"id\":\"a-function\",\"collection\":{\"@ref\":{\"id\":\"functions\"}},\"database\":{\"@ref\":{\"id\":\"a-database\",\"collection\":{\"@ref\":{\"id\":\"databases\"}}}}}}"
 //     );
 // });
@@ -907,12 +787,12 @@ void main() {
 // public void TestRoleRef()
 // {
 //     expectJson(
-//         new RefV(id: "a-role", collection: Native.ROLES),
+//         RefV(id: "a-role", collection: Native.ROLES),
 //         "{\"@ref\":{\"id\":\"a-role\",\"collection\":{\"@ref\":{\"id\":\"roles\"}}}}"
 //     );
 
 //     expectJson(
-//         new RefV(id: "a-role", collection: Native.ROLES, database: new RefV(id: "a-database", collection: Native.DATABASES)),
+//         RefV(id: "a-role", collection: Native.ROLES, database: RefV(id: "a-database", collection: Native.DATABASES)),
 //         "{\"@ref\":{\"id\":\"a-role\",\"collection\":{\"@ref\":{\"id\":\"roles\"}},\"database\":{\"@ref\":{\"id\":\"a-database\",\"collection\":{\"@ref\":{\"id\":\"databases\"}}}}}}"
 //     );
 // });
@@ -924,7 +804,7 @@ void main() {
 //     expectJson(Query(Lambda(x => Add(x, 1))), "{\"query\":{\"lambda\":\"x\",\"expr\":{\"add\":[{\"var\":\"x\"},1]}}}");
 
 //     expectJson(
-//         new QueryV(new Dictionary<string, Expr> { { "lambda", "x" }, { "expr", Add(Var("x"), 1) } }),
+//         QueryV(Dictionary<string, Expr> { { "lambda", "x" }, { "expr", Add(Var("x"), 1) } }),
 //         "{\"@query\":{\"lambda\":\"x\",\"expr\":{\"add\":[{\"var\":\"x\"},1]}}}"
 //     );
 // });
@@ -933,11 +813,11 @@ void main() {
 // public void TestHandleNulls()
 // {
 //     expectJson(Year(null), "{\"year\":null}");
-//     expectJson(wrap("key", null), "{\"object\":{\"key\":null}}");
+//     expectJson(Expr.parse("key", null), "{\"object\":{\"key\":null}}");
 //     expectJson(makeArray("str", null, 10), "[\"str\",null,10]");
 //     expectJson(Let("key", null).In(Var("key")), "{\"let\":[{\"key\":null}],\"in\":{\"var\":\"key\"}}");
-//     expectJson(Add(new Expr[] { null }), "{\"add\":null}");
-//     expectJson(Add(new Expr[] { null, null }), "{\"add\":[null,null]}");
+//     expectJson(Add(Expr[] { null }), "{\"add\":null}");
+//     expectJson(Add(Expr[] { null, null }), "{\"add\":[null,null]}");
 //     expectJson(Add(null), "{\"add\":null}");
 //     expectJson(Add(null, null), "{\"add\":[null,null]}");
 // });
@@ -946,12 +826,12 @@ void main() {
 // public void TestMergeFunction()
 // {
 //     expectJson(
-//         Merge(wrap("x",10), wrap("y", 20)),
+//         Merge(Expr.parse("x",10), Expr.parse("y", 20)),
 //         "{\"merge\":{\"object\":{\"x\":10}},\"with\":{\"object\":{\"y\":20}}}"
 //     );
 
 //     expectJson(
-//         Merge(wrap("x", 10), wrap("y", 20), Lambda(x => x)),
+//         Merge(Expr.parse("x", 10), Expr.parse("y", 20), Lambda(x => x)),
 //         "{\"merge\":{\"object\":{\"x\":10}},\"with\":{\"object\":{\"y\":20}},\"lambda\":{\"lambda\":\"x\",\"expr\":{\"var\":\"x\"}}}"
 //     );
 // });
