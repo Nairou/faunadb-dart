@@ -14,6 +14,8 @@ class Value extends Expr {
     }
     return value.toString();
   }
+
+  bool isNull() => value == null;
 }
 
 class Obj extends Expr {
@@ -22,7 +24,7 @@ class Obj extends Expr {
   Obj(Map<String, Object> parameters) {
     values = Map<String, Expr>();
     parameters?.forEach((k, v) {
-      values[k] = Expr.parse(v);
+      values[k] = Expr.fromObject(v);
     });
   }
 
@@ -42,7 +44,7 @@ class Array extends Expr {
   Array(List<Object> parameters) {
     values = List<Expr>();
     parameters?.forEach((item) {
-      values.add(Expr.parse(item));
+      values.add(Expr.fromObject(item));
     });
   }
 

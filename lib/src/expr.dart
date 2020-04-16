@@ -3,7 +3,7 @@ import 'types.dart';
 abstract class Expr {
   Expr();
 
-  factory Expr.parse(Object parameter) {
+  factory Expr.fromObject(Object parameter) {
     if (parameter is Expr) {
       return parameter;
     }
@@ -20,4 +20,5 @@ abstract class Expr {
   }
 
   String toJson();
+  bool isNull() => false;
 }

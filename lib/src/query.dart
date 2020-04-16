@@ -1,90 +1,289 @@
 import 'expr.dart';
 import 'types.dart';
 
-// class Abort extends Expr {
-//   Abort(String msg) : super({"abort": Expr.fromObject(msg)});
-// }
+class Abort extends Expr {
+  final String msg;
 
-// class At extends Expr {
-//   At(Object timestamp, Expr expr) : super({"at": Expr.fromObject(timestamp), "expr": expr});
-// }
+  Abort(this.msg);
 
-// class Let extends Expr {
-//   Let(Map<String, Object> vars, Expr inexpr) : super({"let": null, "in": inexpr}) {
-//     var output = List<Expr>();
-//     vars.forEach((k, v) {
-//       output.add(Expr({k: Expr.fromObject(v)}));
-//     });
-//     (value as Map<String, Expr>)["let"] = Expr.fromObject(output);
+  String toJson() {
+    return "{\"abort\":${Value(msg).toJson()}}";
+  }
+}
+
+class At extends Expr {
+  final Expr timestamp;
+  final Expr expr;
+
+  At(Object timestamp, this.expr) : timestamp = Expr.fromObject(timestamp);
+
+  String toJson() {
+    return "{\"at\":${timestamp.toJson()},\"expr\":${expr.toJson()}}";
+  }
+}
+
+class Let extends Expr {
+  final Map<String, Expr> bindings;
+  final Expr inExpr;
+
+  Let(Map<String, Object> bindingList, this.inExpr) : bindings = Map<String, Expr>() {
+    bindingList.forEach((k, v) {
+      bindings[k] = Expr.fromObject(v);
+    });
+    assert(bindings.length > 0);
+  }
+
+  String toJson() {
+    var output = List<String>();
+    bindings.forEach((k, v) {
+      output.add("{\"$k\":${v.toJson()}}");
+    });
+    return "{\"let\":[${output.join(",")}],\"in\":${inExpr.toJson()}}";
+  }
+}
+
+class Ref extends Expr {
+  final Expr ref;
+  final String id;
+
+  Ref(this.ref, this.id);
+
+  String toJson() {
+    return "{\"ref\":${ref.toJson()},\"id\":${Value(id).toJson()}}";
+  }
+}
+
+class Var extends Expr {
+  final String varName;
+
+  Var(this.varName);
+
+  String toJson() {
+    return "{\"var\":${Value(varName).toJson()}}";
+  }
+}
+
+class If extends Expr {
+  final Expr ifExpr;
+  final Expr thenExpr;
+  final Expr elseExpr;
+
+  If(Object ifExpr, Object thenExpr, Object elseExpr)
+      : ifExpr = Expr.fromObject(ifExpr),
+        thenExpr = Expr.fromObject(thenExpr),
+        elseExpr = Expr.fromObject(elseExpr);
+
+  String toJson() {
+    return "{\"if\":${ifExpr.toJson()},\"then\":${thenExpr.toJson()},\"else\":${elseExpr.toJson()}}";
+  }
+}
+
+class Do extends Expr {
+  final List<Expr> args;
+
+  Do(List<Object> argsList) : args = List<Expr>() {
+    argsList.forEach((item) {
+      args.add(Expr.fromObject(item));
+    });
+  }
+
+  String toJson() {
+    return "{\"do\":${Expr.fromObject(args).toJson()}}";
+  }
+}
+
+class Lambda extends Expr {
+  final Expr params;
+  final Expr expr;
+
+  Lambda(Object params, this.expr) : params = Expr.fromObject(params);
+
+  String toJson() {
+    return "{\"lambda\":${params.toJson()},\"expr\":${expr.toJson()}}";
+  }
+}
+
+// class Call extends Expr {
+//   final Expr ref;
+//   final List<Expr> args;
+
+//   Call(this.ref, this.args);
+
+//   String toJson() {
+//     return "{\"call\":${values.toJson()}}";
 //   }
 // }
 
-// class Ref extends Expr {
-//   Ref(Expr ref, String id) : super({"ref": ref, "id": Expr.fromObject(id)});
-// }
+class Query extends Expr {
+  final Lambda lambda;
 
-// class Var extends Expr {
-//   Var(String varName) : super({"var": Expr.fromObject(varName)});
-// }
+  Query(this.lambda);
 
-// class If extends Expr {
-//   If(Object condition, Object conditionThen, Object conditionElse) : super({"if": Expr.fromObject(condition), "then": Expr.fromObject(conditionThen), "else": Expr.fromObject(conditionElse)});
-// }
+  String toJson() {
+    return "{\"query\":${lambda.toJson()}}";
+  }
+}
 
-// class Do extends Expr {
-//   Do(List<Object> args) : super({"do": Expr.fromObject(args)});
-// }
+class Map_ extends Expr {
+  final List<Expr> array;
+  final Lambda lambda;
 
-// class Lambda extends Expr {
-//   Lambda(Object params, Expr expr) : super({"lambda": Expr.fromObject(params), "expr": expr});
-// }
+  Map_(List<Object> items, this.lambda) : array = List<Expr>() {
+    items.forEach((item) {
+      array.add(Expr.fromObject(item));
+    });
+  }
 
-// class Call extends Expr {
-//     Call(ref: ExprArg, args: ExprArg[]) {}
-// }
-// class Query extends Expr {
-//     Query(lambda: ExprArg | Lambda) {}
-// }
+  String toJson() {
+    return "{\"map\":${lambda.toJson()},\"collection\":${Expr.fromObject(array).toJson()}}";
+  }
+}
 
-// class Map_ extends Expr {
-//   Map_(Object collection, Lambda lambda) : super({"map": lambda, "collection": Expr.fromObject(collection)});
-// }
+class Merge extends Expr {
+  final Obj object1;
+  final Obj object2;
+  final Lambda resolver;
 
-// class Merge extends Expr {
-//     Merge(object: ExprArg, values: ExprArg, resolver?: Expr | Lambda) {}
-// }
+  Merge(Map<String, Object> object1, Map<String, Object> object2, [this.resolver])
+      : object1 = Obj(object1),
+        object2 = Obj(object2);
 
-// class Foreach extends Expr {
-//   Foreach(Object collection, Lambda lambda) : super({"foreach": lambda, "collection": Expr.fromObject(collection)});
-// }
+  String toJson() {
+    List<String> output = ["\"merge\":${object1.toJson()}", "\"with\":${object2.toJson()}"];
+    if (resolver != null) {
+      output.add("\"lambda\":${resolver.toJson()}");
+    }
+    return "{${output.join(",")}}";
+  }
+}
 
-// class Filter extends Expr {
-//   Filter(Object collection, Lambda lambda) : super({"filter": lambda, "collection": Expr.fromObject(collection)});
-// }
+class Foreach extends Expr {
+  final List<Expr> array;
+  final Lambda lambda;
 
-// class Take extends Expr {
-//   Take(int num, Object collection) : super({"take": Expr.fromObject(num), "collection": Expr.fromObject(collection)});
-// }
+  Foreach(List<Object> items, this.lambda) : array = List<Expr>() {
+    items.forEach((item) {
+      array.add(Expr.fromObject(item));
+    });
+  }
 
-// class Drop extends Expr {
-//   Drop(int num, Object collection) : super({"drop": Expr.fromObject(num), "collection": Expr.fromObject(collection)});
-// }
+  String toJson() {
+    return "{\"foreach\":${lambda.toJson()},\"collection\":${Expr.fromObject(array).toJson()}}";
+  }
+}
 
-// class Prepend extends Expr {
-//   Prepend(Object elements, Object collection) : super({"prepend": Expr.fromObject(elements), "collection": Expr.fromObject(collection)});
-// }
+class Filter extends Expr {
+  final List<Expr> array;
+  final Lambda lambda;
 
-// class Append extends Expr {
-//   Append(Object elements, Object collection) : super({"append": Expr.fromObject(elements), "collection": Expr.fromObject(collection)});
-// }
+  Filter(List<Object> items, this.lambda) : array = List<Expr>() {
+    items.forEach((item) {
+      array.add(Expr.fromObject(item));
+    });
+  }
 
-// class IsEmpty extends Expr {
-//   IsEmpty(Object collection) : super({"is_empty": Expr.fromObject(collection)});
-// }
+  String toJson() {
+    return "{\"filter\":${lambda.toJson()},\"collection\":${Expr.fromObject(array).toJson()}}";
+  }
+}
 
-// class IsNonEmpty extends Expr {
-//   IsNonEmpty(Object collection) : super({"is_nonempty": Expr.fromObject(collection)});
-// }
+class Take extends Expr {
+  final int num;
+  final List<Expr> array;
+
+  Take(this.num, List<Object> items) : array = List<Expr>() {
+    items.forEach((item) {
+      array.add(Expr.fromObject(item));
+    });
+  }
+
+  String toJson() {
+    return "{\"take\":${Value(num).toJson()},\"collection\":${Expr.fromObject(array).toJson()}}";
+  }
+}
+
+class Drop extends Expr {
+  final int num;
+  final List<Expr> array;
+
+  Drop(this.num, List<Object> items) : array = List<Expr>() {
+    items.forEach((item) {
+      array.add(Expr.fromObject(item));
+    });
+  }
+
+  String toJson() {
+    return "{\"drop\":${Value(num).toJson()},\"collection\":${Expr.fromObject(array).toJson()}}";
+  }
+}
+
+class Prepend extends Expr {
+  final List<Expr> base;
+  final List<Expr> elems;
+
+  Prepend(List<Object> baseList, List<Object> elemList)
+      : base = List<Expr>(),
+        elems = List<Expr>() {
+    baseList.forEach((item) {
+      base.add(Expr.fromObject(item));
+    });
+    elemList.forEach((item) {
+      elems.add(Expr.fromObject(item));
+    });
+  }
+
+  String toJson() {
+    return "{\"prepend\":${Expr.fromObject(base).toJson()},\"collection\":${Expr.fromObject(elems).toJson()}}";
+  }
+}
+
+class Append extends Expr {
+  final List<Expr> base;
+  final List<Expr> elems;
+
+  Append(List<Object> baseList, List<Object> elemList)
+      : base = List<Expr>(),
+        elems = List<Expr>() {
+    baseList.forEach((item) {
+      base.add(Expr.fromObject(item));
+    });
+    elemList.forEach((item) {
+      elems.add(Expr.fromObject(item));
+    });
+  }
+
+  String toJson() {
+    return "{\"append\":${Expr.fromObject(base).toJson()},\"collection\":${Expr.fromObject(elems).toJson()}}";
+  }
+}
+
+class IsEmpty extends Expr {
+  final List<Expr> array;
+
+  IsEmpty(List<Object> items) : array = List<Expr>() {
+    items.forEach((item) {
+      array.add(Expr.fromObject(item));
+    });
+  }
+
+  String toJson() {
+    return "{\"is_empty\":${Expr.fromObject(array).toJson()}}";
+  }
+}
+
+class IsNonEmpty extends Expr {
+  final List<Expr> array;
+
+  IsNonEmpty(List<Object> items) : array = List<Expr>() {
+    items.forEach((item) {
+      array.add(Expr.fromObject(item));
+    });
+  }
+
+  String toJson() {
+    return "{\"is_nonempty\":${Expr.fromObject(array).toJson()}}";
+  }
+}
 
 // class IsNumber extends Expr {
 //     IsNumber(expr: ExprArg) {}
@@ -170,11 +369,42 @@ import 'types.dart';
 //     Reduce(lambda: ExprArg, initial: ExprArg, collection: ExprArg) {}
 // }
 
-// class Paginate extends Expr {
-//   Paginate(Expr input, {Object ts, Expr after, Expr before, int size, bool events, bool sources}) : super({"paginate": input, if (ts != null) "ts": ts, if (before != null) "before": before, if (after != null) "after": after, if (size != null) "size": Expr.fromObject(size), if (events != null) "events": Expr.fromObject(events), if (sources != null) "sources": Expr.fromObject(sources)}) {
-//     assert(ts == null || ts is int || ts is Time);
-//   }
-// }
+class Paginate extends Expr {
+  final Expr input;
+  final Expr ts;
+  final Expr after;
+  final Expr before;
+  final int size;
+  final bool events;
+  final bool sources;
+
+  Paginate(this.input, {Object ts, this.after, this.before, this.size, this.events, this.sources}) : ts = Expr.fromObject(ts) {
+    assert(ts == null || ts is int || ts is Time);
+  }
+
+  String toJson() {
+    List<String> output = ["\"paginate\":${input.toJson()}"];
+    if (ts != null && !ts.isNull()) {
+      output.add("\"ts\":${ts.toJson()}");
+    }
+    if (before != null && !before.isNull()) {
+      output.add("\"before\":${before.toJson()}");
+    }
+    if (after != null && !after.isNull()) {
+      output.add("\"after\":${after.toJson()}");
+    }
+    if (size != null) {
+      output.add("\"size\":${Value(size).toJson()}");
+    }
+    if (events != null) {
+      output.add("\"events\":${Value(events).toJson()}");
+    }
+    if (sources != null) {
+      output.add("\"sources\":${Value(sources).toJson()}");
+    }
+    return "{${output.join(",")}}";
+  }
+}
 
 // class Exists extends Expr {
 //     Exists(ref: ExprArg, ts?: ExprArg) {}
@@ -206,10 +436,9 @@ import 'types.dart';
 // }
 
 class CreateDatabase extends Expr {
-  Obj values;
-  CreateDatabase(Map<String, Object> parameters) {
-    values = Obj(parameters);
-  }
+  final Obj values;
+
+  CreateDatabase(Map<String, Object> parameters) : values = Obj(parameters);
 
   String toJson() {
     return "{\"create_database\":${values.toJson()}}";
@@ -343,11 +572,17 @@ class CreateDatabase extends Expr {
 //     Format(string: ExprArg, values: ExprArg) {}
 // }
 
-// class Time extends Expr {
-//   Time(String time) : super({"time": Expr.fromObject(time)});
+class Time extends Expr {
+  final DateTime time;
 
-//   Time.fromDateTime(DateTime date) : super({"time": Expr.fromObject(date.toIso8601String())});
-// }
+  Time(String date) : time = DateTime.parse(date);
+
+  Time.fromDateTime(this.time);
+
+  String toJson() {
+    return "{\"time\":${Value(time.toIso8601String()).toJson()}}";
+  }
+}
 
 // class Epoch extends Expr {
 //     Epoch(number: ExprArg, unit: ExprArg) {}
@@ -412,65 +647,185 @@ class CreateDatabase extends Expr {
 //     NewId() {}
 // }
 
-// class Database extends Expr {
-//   Database(String name, [Expr scope]) : super({"database": Expr.fromObject(name), if (scope != null) "scope": Expr.fromObject(scope)});
-// }
+class Database extends Expr {
+  final String name;
+  final Expr scope;
 
-// class Index extends Expr {
-//   Index(String name, [Expr scope]) : super({"index": Expr.fromObject(name), if (scope != null) "scope": scope});
-// }
+  Database(this.name, [this.scope]);
 
-// class Class extends Expr {
-//   Class(String name, [Expr scope]) : super({"class": Expr.fromObject(name), if (scope != null) "scope": scope});
-// }
+  String toJson() {
+    if (scope != null) {
+      return "{\"database\":${Value(name).toJson()},\"scope\":${scope.toJson()}}";
+    } else {
+      return "{\"database\":${Value(name).toJson()}}";
+    }
+  }
+}
 
-// class Collection extends Expr {
-//   Collection(String name, [Expr scope]) : super({"collection": Expr.fromObject(name), if (scope != null) "scope": scope});
-// }
+class Index extends Expr {
+  final String name;
+  final Expr scope;
 
-// class Function extends Expr {
-//   Function(String name, [Expr scope]) : super({"function": Expr.fromObject(name), if (scope != null) "scope": scope});
-// }
+  Index(this.name, [this.scope]);
 
-// class Role extends Expr {
-//   Role(String name, [Expr scope]) : super({"role": Expr.fromObject(name), if (scope != null) "scope": scope});
-// }
+  String toJson() {
+    if (scope != null) {
+      return "{\"index\":${Value(name).toJson()},\"scope\":${scope.toJson()}}";
+    } else {
+      return "{\"index\":${Value(name).toJson()}}";
+    }
+  }
+}
 
-// class Databases extends Expr {
-//   Databases([Expr database]) : super({"databases": Expr.fromObject(database)});
-// }
+class Class extends Expr {
+  final String name;
+  final Expr scope;
 
-// class Classes extends Expr {
-//   Classes([Expr scope]) : super({"classes": Expr.fromObject(scope)});
-// }
+  Class(this.name, [this.scope]);
 
-// class Collections extends Expr {
-//   Collections([Expr scope]) : super({"collections": Expr.fromObject(scope)});
-// }
+  String toJson() {
+    if (scope != null) {
+      return "{\"class\":${Value(name).toJson()},\"scope\":${scope.toJson()}}";
+    } else {
+      return "{\"class\":${Value(name).toJson()}}";
+    }
+  }
+}
 
-// class Indexes extends Expr {
-//   Indexes([Expr database]) : super({"indexes": Expr.fromObject(database)});
-// }
+class Collection extends Expr {
+  final String name;
+  final Expr scope;
 
-// class Functions extends Expr {
-//   Functions([Expr database]) : super({"functions": Expr.fromObject(database)});
-// }
+  Collection(this.name, [this.scope]);
 
-// class Roles extends Expr {
-//   Roles([Expr database]) : super({"roles": Expr.fromObject(database)});
-// }
+  String toJson() {
+    if (scope != null) {
+      return "{\"collection\":${Value(name).toJson()},\"scope\":${scope.toJson()}}";
+    } else {
+      return "{\"collection\":${Value(name).toJson()}}";
+    }
+  }
+}
 
-// class Keys extends Expr {
-//   Keys([Expr database]) : super({"keys": Expr.fromObject(database)});
-// }
+class Function extends Expr {
+  final String name;
+  final Expr scope;
 
-// class Tokens extends Expr {
-//   Tokens([Expr database]) : super({"tokens": Expr.fromObject(database)});
-// }
+  Function(this.name, [this.scope]);
 
-// class Credentials extends Expr {
-//   Credentials([Expr database]) : super({"credentials": Expr.fromObject(database)});
-// }
+  String toJson() {
+    if (scope != null) {
+      return "{\"function\":${Value(name).toJson()},\"scope\":${scope.toJson()}}";
+    } else {
+      return "{\"function\":${Value(name).toJson()}}";
+    }
+  }
+}
+
+class Role extends Expr {
+  final String name;
+  final Expr scope;
+
+  Role(this.name, [this.scope]);
+
+  String toJson() {
+    if (scope != null) {
+      return "{\"role\":${Value(name).toJson()},\"scope\":${scope.toJson()}}";
+    } else {
+      return "{\"role\":${Value(name).toJson()}}";
+    }
+  }
+}
+
+class Databases extends Expr {
+  final Expr database;
+
+  Databases([this.database]);
+
+  String toJson() {
+    return "{\"databases\":${database?.toJson()}}";
+  }
+}
+
+class Classes extends Expr {
+  final Expr scope;
+
+  Classes(this.scope);
+
+  String toJson() {
+    return "{\"classes\":${scope.toJson()}}";
+  }
+}
+
+class Collections extends Expr {
+  final Expr scope;
+
+  Collections([this.scope]);
+
+  String toJson() {
+    return "{\"collections\":${scope?.toJson()}}";
+  }
+}
+
+class Indexes extends Expr {
+  final Expr database;
+
+  Indexes([this.database]);
+
+  String toJson() {
+    return "{\"indexes\":${database?.toJson()}}";
+  }
+}
+
+class Functions extends Expr {
+  final Expr database;
+
+  Functions([this.database]);
+
+  String toJson() {
+    return "{\"functions\":${database?.toJson()}}";
+  }
+}
+
+class Roles extends Expr {
+  final Expr database;
+
+  Roles([this.database]);
+
+  String toJson() {
+    return "{\"roles\":${database?.toJson()}}";
+  }
+}
+
+class Keys extends Expr {
+  final Expr database;
+
+  Keys([this.database]);
+
+  String toJson() {
+    return "{\"keys\":${database?.toJson()}}";
+  }
+}
+
+class Tokens extends Expr {
+  final Expr database;
+
+  Tokens([this.database]);
+
+  String toJson() {
+    return "{\"tokens\":${database?.toJson()}}";
+  }
+}
+
+class Credentials extends Expr {
+  final Expr database;
+
+  Credentials([this.database]);
+
+  String toJson() {
+    return "{\"credentials\":${database?.toJson()}}";
+  }
+}
 
 // class Equals extends Expr {
 //     Equals(args: ExprArg[]) {}
@@ -488,9 +843,23 @@ class CreateDatabase extends Expr {
 //     Abs(expr: ExprArg) {}
 // }
 
-// class Add extends Expr {
-//   Add(List<Expr> args) : super({"add": Expr.fromObject(args)});
-// }
+class Add extends Expr {
+  final List<Expr> args;
+
+  Add(Object items) : args = List<Expr>() {
+    if (items is List) {
+      items.forEach((item) {
+        args.add(Expr.fromObject(item));
+      });
+    } else {
+      args.add(Expr.fromObject(items));
+    }
+  }
+
+  String toJson() {
+    return "{\"add\":${Expr.fromObject(args.length > 1 ? args : args[0]).toJson()}}";
+  }
+}
 
 // class BitAnd extends Expr {
 //     BitAnd(args: ExprArg[]) {}
