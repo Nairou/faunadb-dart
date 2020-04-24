@@ -51,6 +51,11 @@ class Ref extends Expr {
   String toJson() {
     return "{\"ref\":${ref.toJson()},\"id\":${Value(id).toJson()}}";
   }
+
+  factory Ref.fromJson(Map<String, dynamic> json) {
+    String id = json["id"];
+    if (json.containsKey("class")) {}
+  }
 }
 
 class Var extends Expr {

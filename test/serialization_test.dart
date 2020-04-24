@@ -8,6 +8,10 @@ import 'package:faunadb/faunadb.dart';
 void expectJson(Expr actual, String match) => expect(actual.toJson(), match);
 
 void main() {
+  test('ClientTemp', () async {
+    var client = FaunaClient(secret: "(database secret)");
+    var temp = await client.query(Paginate(Indexes()));
+  });
   test('TestLiteralValues', () {
     expectJson(Value(10), "10");
     expectJson(Value("a string"), "\"a string\"");
